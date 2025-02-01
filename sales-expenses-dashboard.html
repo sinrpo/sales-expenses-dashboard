@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-top: 0;
+        }
+        .input-form {
+            margin-bottom: 20px;
+        }
+        .input-form input, .input-form button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .input-form button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .input-form button:hover {
+            background-color: #0056b3;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .total-cost {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .delete-icon {
+            cursor: pointer;
+            color: red;
+            font-size: 1.2em;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .chart {
+            width: 45%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sales Dashboard</h1>
+    <div class="container">
+        <div class="card">
+            <h2>Sales</h2>
+            <div class="input-form">
+                <input type="date" id="salesDate" placeholder="Date">
+                <input type="text" id="productName" placeholder="Name of Product">
+                <input type="number" id="productCost" placeholder="Cost of Product">
+                <input type="number" id="quantity" placeholder="Quantity">
+                <input type="number" id="cartoon" placeholder="Cartoon">
+                <input type="number" id="sale" placeholder="Sale">
+                <input type="number" id="ticket" placeholder="Ticket">
+                <input type="number" id="taxi" placeholder="Taxi">
+                <button onclick="addSalesData()">Add Sales Data</button>
+            </div>
+            <div class="table-container">
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product Name</th>
+                            <th>Cost of Product</th>
+                            <th>Quantity</th>
+                            <th>Cartoon</th>
+                            <th>Sale</th>
+                            <th>Ticket</th>
+                            <th>Taxi</th>
+                            <th>Total Cost</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Sales data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="total-cost" id="totalCost">Total Cost: 0.00 DH</div>
+        </div>
+        <div class="card">
+            <h2>Sales by Product</h2>
+            <div class="table-container">
+                <table id="salesByProductTable">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Number of Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Sales by product data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let totalCost = 0;
+        let salesByProduct = {};
+        let pieChart, barChart;
+
+        function addSalesData() {
+            const date = document.getElementById('salesDate').value;
+            const productName = document.getElementById('productName').value;
+            const productCost = parseFloat(document.getElementById('productCost').value) || 0;
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const cartoon = parseFloat(document.getElementById('cartoon').value) || 0;
+            const sale = parseFloat(document.getElementById('sale').value) || 0;
+            const ticket = parseFloat(document.getElementById('ticket').value) || 0;
+            const taxi = parseFloat(document.getElementById('taxi').value) || 0;
+
+            // Calculate the total cost for the current entry
+            const entryTotalCost = (productCost + cartoon + sale) * quantity + ticket + taxi;
+
+            // Update the overall total cost
+            totalCost += entryTotalCost;
+            document.getElementById('totalCost').innerHTML = `Total Cost: ${totalCost.toFixed(2)} DH`;
+
+            // Create a new row for the table
+            const table = document.getElementById('salesTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            const cell3 = newRow.insertCell(2);
+            const cell4 = newRow.insertCell(3);
+            const cell5 = newRow.insertCell(4);
+            const cell6 = newRow.insertCell(5);
+            const cell7 = newRow.insertCell(6);
+            const cell8 = newRow.insertCell(7);
+            const cell9 = newRow.insertCell(8);
+            const cell10 = newRow.insertCell(9);
+
+            cell1.innerHTML = date;
+            cell2.innerHTML = productName;
+            cell3.innerHTML = productCost.toFixed(2);
+            cell4.innerHTML = quantity;
+            cell5.innerHTML = cartoon.toFixed(2);
+            cell6.innerHTML = sale.toFixed(2);
+            cell7.innerHTML = ticket.toFixed(2);
+            cell8.innerHTML = taxi.toFixed(2);
+            cell9.innerHTML = entryTotalCost.toFixed(2);
+            cell10.innerHTML = '<span class="delete-icon" onclick="deleteRow(this)">❌</span>';
+
+            // Update the sales by product table
+            if (salesByProduct[productName]) {
+                salesByProduct[productName] += quantity;
+            } else {
+                salesByProduct[productName] = quantity;
+            }
+            updateSalesByProductTable();
+            updateCharts();
+
+            // Clear the input fields
+            document.getElementById('salesDate').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('productCost').value = '';
+            document.getElementById('quantity').value = '';
+            document.getElementById('cartoon').value = '';
+            document.getElementById('sale').value = '';
+            document.getElementById('ticket').value = '';
+            document.getElementById('taxi').value = '';
+        }
+
+        function deleteRow(button) {
+            const row = button.parentNode.parentNode;
+            const entryTotalCost = parseFloat(row.cells[8].innerHTML) || 0;
+            const productName = row.cells[1].innerHTML;
+            const quantity = parseInt(row.cells[3].innerHTML) || 0;
+
+            // Update the overall total cost
+            totalCost -= entryTotalCost;
+            document.getElementById('totalCost').innerHTML = `Total Cost: ${totalCost.toFixed(2)} DH`;
+
+            // Update the sales by product table
+            salesByProduct[productName] -= quantity;
+            if (salesByProduct[productName] <= 0) {
+                delete salesByProduct[productName];
+            }
+            updateSalesByProductTable();
+            updateCharts();
+
+            // Remove the row from the table
+            row.parentNode.removeChild(row);
+        }
+
+        function updateSalesByProductTable() {
+            const table = document.getElementById('salesByProductTable').getElementsByTagName('tbody')[0];
+            table.innerHTML = ''; // Clear the table
+
+            for (const productName in salesByProduct) {
+                const newRow = table.insertRow();
+                const cell1 = newRow.insertCell(0);
+                const cell2 = newRow.insertCell(1);
+
+                cell1.innerHTML = productName;
+                cell2.innerHTML = salesByProduct[productName];
+            }
+        }
+
+        function updateCharts() {
+            const labels = Object.keys(salesByProduct);
+            const data = Object.values(salesByProduct);
+
+            if (pieChart) {
+                pieChart.destroy();
+            }
+            if (barChart) {
+                barChart.destroy();
+            }
+
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales by Product (Pie Chart)'
+                        }
+                    }
+                },
+            });
+
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Sales',
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales by Product (Bar Chart)'
+                        }
+                    }
+                },
+            });
+        }
+    </script>
+</body>
+</html>
